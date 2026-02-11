@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import datetime
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 from accounting_etl.pdf_parser import Transaction
 
@@ -64,6 +65,9 @@ class ExcelBuilder:
             worksheet = writer.sheets['Transactions']
             workbook = writer.book
 
+            # Apply formatting
+            self._format_worksheet(worksheet, len(df))
+
             # Create a hidden sheet for dropdown lists
             if any([gl_codes and len(gl_codes) > 0,
                     location_codes and len(location_codes) > 0,
@@ -94,6 +98,10 @@ class ExcelBuilder:
             if dept_codes and len(dept_codes) > 0:
                 print(f"  Adding Department dropdown to column H ({len(dept_codes)} codes)")
                 self._add_dropdown(worksheet, workbook, lists_sheet, dept_codes, len(df), 'H', 'Dept', col_offset)
+
+            # Add Yes/No dropdown for Receipt_Received column (column J)
+            print(f"  Adding Receipt_Received dropdown to column J")
+            self._add_receipt_dropdown(worksheet, len(df))
 
         return output_path
 
@@ -129,3 +137,62 @@ class ExcelBuilder:
         # Start from row 2 (after header) to row num_rows + 1
         for row in range(2, num_rows + 2):
             dv.add(f'{column}{row}')
+
+    def _format_worksheet(self, worksheet, num_rows: int):
+        """Apply professional formatting to the worksheet."""
+        # Define styles
+        header_fill = PatternFill(start_color='366092', end_color='366092', fill_type='solid')
+        header_font = Font(bold=True, color='FFFFFF', name='Arial', size=11)
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # Format header row (row 1)
+        for cell in worksheet[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = thin_border
+
+        # Format Amount column (column I) with currency formatting
+        for row in range(2, num_rows + 2):
+            cell = worksheet[f'I{row}']
+            cell.number_format = '$#,##0.00'
+            cell.alignment = Alignment(horizontal='right')
+
+        # Format Date column (column A)
+        for row in range(2, num_rows + 2):
+            cell = worksheet[f'A{row}']
+            cell.alignment = Alignment(horizontal='center')
+
+        # Auto-adjust column widths
+        for column in worksheet.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            worksheet.column_dimensions[column_letter].width = adjusted_width
+
+        # Freeze header row
+        worksheet.freeze_panes = 'A2'
+
+    def _add_receipt_dropdown(self, worksheet, num_rows: int):
+        """Add Yes/No dropdown validation to Receipt_Received column."""
+        receipt_dv = DataValidation(type="list", formula1='"Yes,No"', allow_blank=False)
+        receipt_dv.prompt = 'Select Yes or No'
+        receipt_dv.promptTitle = 'Receipt Received'
+        receipt_dv.error = 'Please select Yes or No'
+        receipt_dv.errorTitle = 'Invalid Entry'
+
+        worksheet.add_data_validation(receipt_dv)
+
+        for row in range(2, num_rows + 2):
+            receipt_dv.add(f'J{row}')

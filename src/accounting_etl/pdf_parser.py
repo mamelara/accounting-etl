@@ -158,7 +158,7 @@ class ChartOfAccountsParser:
         """
         Parse the Chart of Accounts PDF and extract all code types.
 
-        Returns tuple of (funder_codes, gl_codes, location_codes)
+        Returns tuple of (funder_codes, gl_codes, location_codes, program_codes, dept_codes)
         Each is a dict of {code: name}
         """
         import re
@@ -166,10 +166,12 @@ class ChartOfAccountsParser:
         funder_codes = {}
         gl_codes = {}
         location_codes = {}
+        program_codes = {}
+        dept_codes = {}
 
         if not self.pdf_path.exists():
             print(f"Warning: Chart of Accounts PDF not found at {self.pdf_path}")
-            return funder_codes, gl_codes, location_codes
+            return funder_codes, gl_codes, location_codes, program_codes, dept_codes
 
         with pdfplumber.open(self.pdf_path) as pdf:
             for page in pdf.pages:
@@ -205,6 +207,14 @@ class ChartOfAccountsParser:
                         elif 'LOC CODE' in row_text or 'LOCATION CODE' in row_text or ('LOC' in row_text and 'CODE' in row_text):
                             table_type = 'location'
                             print(f"  Found Location Code table")
+                            break
+                        elif 'PROG CODE' in row_text or 'PROGRAM CODE' in row_text or ('PROG' in row_text and 'CODE' in row_text):
+                            table_type = 'program'
+                            print(f"  Found Program Code table")
+                            break
+                        elif 'DEPT CODE' in row_text or 'DEPARTMENT CODE' in row_text or ('DEPT' in row_text and 'CODE' in row_text):
+                            table_type = 'dept'
+                            print(f"  Found Department Code table")
                             break
 
                     if not table_type:
@@ -242,4 +252,14 @@ class ChartOfAccountsParser:
                             if re.match(r'^\d{2}$', code_cell):
                                 location_codes[code_cell] = name_cell
 
-        return funder_codes, gl_codes, location_codes
+                        elif table_type == 'program':
+                            # Program codes (flexible length, numeric)
+                            if re.match(r'^\d+$', code_cell):
+                                program_codes[code_cell] = name_cell
+
+                        elif table_type == 'dept':
+                            # Department codes (flexible length, numeric)
+                            if re.match(r'^\d+$', code_cell):
+                                dept_codes[code_cell] = name_cell
+
+        return funder_codes, gl_codes, location_codes, program_codes, dept_codes

@@ -40,10 +40,12 @@ The application requires a **Chart of Accounts PDF** file:
 
 1. Place your Chart of Accounts PDF in the `config/` folder
 2. Name it exactly: `chart of accounts.pdf`
-3. The PDF should contain three types of codes with headers:
+3. The PDF should contain five types of codes with headers:
    - **Funder Code** - 4-digit codes (e.g., `0000 GENERAL UNRESTRICTED`)
    - **EXP CODE** - 5-digit GL codes (e.g., `51000 Office Supplies`)
    - **LOC CODE** - 2-digit location codes (e.g., `01 Main Office`)
+   - **PROG CODE** - Program codes (e.g., `100 Youth Services`)
+   - **DEPT CODE** - Department codes (e.g., `200 Administration`)
 
 The `config/config.json` file can remain empty (`{}`) for now.
 
@@ -54,7 +56,7 @@ The `config/config.json` file can remain empty (`{}`) for now.
 3. **Run the application** - It will process all PDFs in the downloads folder
 4. **Review the Excel file** - Check the generated spreadsheet
 5. **Fill in descriptions** - Add descriptions for each transaction
-6. **Select codes from dropdowns** - Choose GL Account, Location, and Funder from dropdowns
+6. **Select codes from dropdowns** - Choose GL Account, Location, Program, Funder, and Dept from dropdowns
 7. **Check receipts** - Mark which transactions have receipts
 8. **Clean up** - Delete processed PDFs from `downloads/` folder when done
 
@@ -65,11 +67,11 @@ The generated Excel file contains these columns:
 - **Date** - Transaction date (from PDF)
 - **Vendor** - Vendor name (from PDF)
 - **Description** - Empty (you fill this in)
-- **G/L Account** - Dropdown with GL codes (5-digit) from Chart of Accounts
-- **Location** - Dropdown with location codes (2-digit) from Chart of Accounts
-- **Program** - Pre-filled from vendor history
-- **Funder** - Dropdown with funder codes (4-digit) from Chart of Accounts
-- **Dept** - Pre-filled from vendor history
+- **G/L Account** - Dropdown with GL codes from Chart of Accounts
+- **Location** - Dropdown with location codes from Chart of Accounts
+- **Program** - Dropdown with program codes from Chart of Accounts
+- **Funder** - Dropdown with funder codes from Chart of Accounts
+- **Dept** - Dropdown with department codes from Chart of Accounts
 - **Amount** - Transaction amount (from PDF)
 - **Receipt_Received** - Checkbox (you check these)
 

@@ -1,0 +1,100 @@
+name: Build and Release Windows Executable
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+        shell: bash
+
+      - name: Install dependencies
+        run: |
+          uv sync --extra build
+
+      - name: Build executable with PyInstaller
+        run: |
+          uv run pyinstaller build/AccountingETL.spec
+
+      - name: Create downloads and data directories
+        run: |
+          mkdir dist/AccountingETL/downloads
+          mkdir dist/AccountingETL/data
+          New-Item -ItemType File -Path dist/AccountingETL/downloads/.gitkeep
+          New-Item -ItemType File -Path dist/AccountingETL/data/.gitkeep
+        shell: pwsh
+
+      - name: Copy config template
+        run: |
+          Copy-Item config/config_template.json dist/AccountingETL/config/config_template.json
+          Copy-Item config/config_template.json dist/AccountingETL/config/config.json
+        shell: pwsh
+
+      - name: Create README for release
+        run: |
+          @"
+          # Accounting ETL - Windows Release
+
+          ## Quick Start
+
+          1. Extract this folder to your computer
+          2. Place your 'chart of accounts.pdf' in the config/ folder
+          3. Download your Wells Fargo credit card statements (PDFs)
+          4. Place the statement PDFs in the downloads/ folder
+          5. Double-click AccountingETL.exe to run
+          6. Find your Excel file in the downloads/ folder
+
+          ## Configuration
+
+          The config/config.json file can remain as-is (empty {}).
+
+          Just make sure you have:
+          - config/chart of accounts.pdf (your GL/Funder/Location codes)
+          - downloads/ folder (put your statement PDFs here)
+
+          ## Support
+
+          For issues, visit: https://github.com/${{ github.repository }}/issues
+          "@ | Out-File -FilePath dist/AccountingETL/README.txt -Encoding UTF8
+        shell: pwsh
+
+      - name: Zip the application
+        run: |
+          Compress-Archive -Path dist/AccountingETL -DestinationPath AccountingETL-Windows.zip
+        shell: pwsh
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: AccountingETL-Windows.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact (for manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AccountingETL-Windows
+          path: AccountingETL-Windows.zip
+          retention-days: 7

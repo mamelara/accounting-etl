@@ -17,7 +17,9 @@ class ExcelBuilder:
               output_dir: Path,
               funder_codes: Dict[str, str] = None,
               gl_codes: Dict[str, str] = None,
-              location_codes: Dict[str, str] = None) -> Path:
+              location_codes: Dict[str, str] = None,
+              program_codes: Dict[str, str] = None,
+              dept_codes: Dict[str, str] = None) -> Path:
         """
         Create Excel file from transactions.
 
@@ -27,6 +29,8 @@ class ExcelBuilder:
             funder_codes: Dictionary of funder codes {code: description}
             gl_codes: Dictionary of GL codes {code: description}
             location_codes: Dictionary of location codes {code: description}
+            program_codes: Dictionary of program codes {code: description}
+            dept_codes: Dictionary of department codes {code: description}
 
         Returns path to created file.
         """
@@ -61,9 +65,11 @@ class ExcelBuilder:
             workbook = writer.book
 
             # Create a hidden sheet for dropdown lists
-            if (gl_codes and len(gl_codes) > 0) or \
-               (location_codes and len(location_codes) > 0) or \
-               (funder_codes and len(funder_codes) > 0):
+            if any([gl_codes and len(gl_codes) > 0,
+                    location_codes and len(location_codes) > 0,
+                    program_codes and len(program_codes) > 0,
+                    funder_codes and len(funder_codes) > 0,
+                    dept_codes and len(dept_codes) > 0]):
                 lists_sheet = workbook.create_sheet('Dropdown_Lists')
                 lists_sheet.sheet_state = 'hidden'
 
@@ -77,9 +83,17 @@ class ExcelBuilder:
                 print(f"  Adding Location dropdown to column E ({len(location_codes)} codes)")
                 self._add_dropdown(worksheet, workbook, lists_sheet, location_codes, len(df), 'E', 'Location', col_offset)
                 col_offset += 1
+            if program_codes and len(program_codes) > 0:
+                print(f"  Adding Program dropdown to column F ({len(program_codes)} codes)")
+                self._add_dropdown(worksheet, workbook, lists_sheet, program_codes, len(df), 'F', 'Program', col_offset)
+                col_offset += 1
             if funder_codes and len(funder_codes) > 0:
                 print(f"  Adding Funder dropdown to column G ({len(funder_codes)} codes)")
                 self._add_dropdown(worksheet, workbook, lists_sheet, funder_codes, len(df), 'G', 'Funder', col_offset)
+                col_offset += 1
+            if dept_codes and len(dept_codes) > 0:
+                print(f"  Adding Department dropdown to column H ({len(dept_codes)} codes)")
+                self._add_dropdown(worksheet, workbook, lists_sheet, dept_codes, len(df), 'H', 'Dept', col_offset)
 
         return output_path
 

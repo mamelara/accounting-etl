@@ -42,7 +42,7 @@ def main():
     # Load codes from Chart of Accounts
     print("\n[1/4] Loading codes from Chart of Accounts...")
     coa_parser = ChartOfAccountsParser()
-    funder_codes, gl_codes, location_codes = coa_parser.parse()
+    funder_codes, gl_codes, location_codes, program_codes, dept_codes = coa_parser.parse()
 
     print(f"  Funder codes: {len(funder_codes)}")
     if len(funder_codes) > 0:
@@ -56,7 +56,15 @@ def main():
     if len(location_codes) > 0:
         print(f"    Sample: {list(location_codes.items())[:2]}")
 
-    if not funder_codes and not gl_codes and not location_codes:
+    print(f"  Program codes: {len(program_codes)}")
+    if len(program_codes) > 0:
+        print(f"    Sample: {list(program_codes.items())[:2]}")
+
+    print(f"  Department codes: {len(dept_codes)}")
+    if len(dept_codes) > 0:
+        print(f"    Sample: {list(dept_codes.items())[:2]}")
+
+    if not any([funder_codes, gl_codes, location_codes, program_codes, dept_codes]):
         print("Warning: No codes loaded. Dropdowns will be empty.")
 
     # Find PDFs in downloads folder
@@ -113,16 +121,18 @@ def main():
     # Generate Excel
     print("\n[4/4] Generating Excel spreadsheet...")
     builder = ExcelBuilder()
-    output_path = builder.build(all_transactions, downloads_dir, funder_codes, gl_codes, location_codes)
+    output_path = builder.build(all_transactions, downloads_dir, funder_codes, gl_codes, location_codes, program_codes, dept_codes)
 
     print(f"\n✓ Success! Excel saved to: {output_path}")
     print("\nNext steps:")
     print("1. Open the Excel file")
     print("2. Fill in the 'Description' column")
     print("3. Select codes from dropdowns:")
-    print("   - G/L Account (5-digit GL codes)")
-    print("   - Location (2-digit location codes)")
-    print("   - Funder (4-digit funder codes)")
+    print("   - G/L Account (GL codes)")
+    print("   - Location (location codes)")
+    print("   - Program (program codes)")
+    print("   - Funder (funder codes)")
+    print("   - Dept (department codes)")
     print("4. Check 'Receipt_Received' column")
     print("5. Delete processed PDFs from downloads/ folder when done")
 

@@ -15,7 +15,6 @@ a = Analysis(
     binaries=[],
     datas=[
         (str(project_root / "version.txt"), "."),
-        (str(project_root / "config" / "config_template.json"), "config"),
     ],
     hiddenimports=[
         "pandas",

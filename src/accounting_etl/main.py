@@ -9,7 +9,6 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from accounting_etl.config import Config
 from accounting_etl.pdf_parser import StatementParser, ChartOfAccountsParser
 from accounting_etl.database import Database
 from accounting_etl.excel_builder import ExcelBuilder
@@ -28,12 +27,6 @@ def main():
     # Check for updates
     update_checker = UpdateChecker()
     update_checker.check_and_notify()
-
-    # Load configuration (for future config options)
-    config = Config.load()
-    if not config:
-        print("\nWarning: Configuration not found. Using defaults.")
-        config = Config()
 
     # Initialize database
     db = Database()

@@ -43,14 +43,9 @@ jobs:
         run: |
           mkdir dist/AccountingETL/downloads
           mkdir dist/AccountingETL/data
+          mkdir dist/AccountingETL/config
           New-Item -ItemType File -Path dist/AccountingETL/downloads/.gitkeep
           New-Item -ItemType File -Path dist/AccountingETL/data/.gitkeep
-        shell: pwsh
-
-      - name: Copy config template
-        run: |
-          Copy-Item config/config_template.json dist/AccountingETL/config/config_template.json
-          Copy-Item config/config_template.json dist/AccountingETL/config/config.json
         shell: pwsh
 
       - name: Create README for release
@@ -67,12 +62,9 @@ jobs:
           5. Double-click AccountingETL.exe to run
           6. Find your Excel file in the downloads/ folder
 
-          ## Configuration
+          ## What You Need
 
-          The config/config.json file can remain as-is (empty {}).
-
-          Just make sure you have:
-          - config/chart of accounts.pdf (your GL/Funder/Location codes)
+          - config/chart of accounts.pdf (your GL/Funder/Location/Program/Dept codes)
           - downloads/ folder (put your statement PDFs here)
 
           ## Support

@@ -47,7 +47,7 @@ The application requires a **Chart of Accounts PDF** file:
    - **PROG CODE** - Program codes (e.g., `100 Youth Services`)
    - **DEPT CODE** - Department codes (e.g., `200 Administration`)
 
-The `config/config.json` file can remain empty (`{}`) for now.
+No config.json file is needed - all paths are relative to the application directory.
 
 ## Usage
 

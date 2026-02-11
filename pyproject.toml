@@ -1,6 +1,6 @@
 [project]
 name = "accounting-etl"
-version = "1.0.0"
+version = "1.1.0"
 description = "Automated credit card statement processing for accountants"
 requires-python = ">=3.10"
 dependencies = [

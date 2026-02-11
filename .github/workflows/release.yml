@@ -21,12 +21,18 @@ jobs:
 
       - name: Install uv
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-        shell: bash
+          irm https://astral.sh/uv/install.ps1 | iex
+        shell: pwsh
+
+      - name: Add uv to PATH
+        run: |
+          echo "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        shell: pwsh
 
       - name: Install dependencies
         run: |
           uv sync --extra build
+        shell: pwsh
 
       - name: Build executable with PyInstaller
         run: |

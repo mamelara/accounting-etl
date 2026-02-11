@@ -5,8 +5,8 @@ from pathlib import Path
 
 block_cipher = None
 
-# Get the project root
-project_root = Path(__file__).parent.parent
+# Get the project root (SPECPATH is the directory containing this spec file)
+project_root = Path(SPECPATH).parent
 src_path = project_root / "src"
 
 a = Analysis(

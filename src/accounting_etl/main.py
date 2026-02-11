@@ -9,7 +9,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from accounting_etl.pdf_parser import StatementParser, ChartOfAccountsParser
+from accounting_etl.pdf_parser import StatementParser, ChartOfAccountsParser, get_base_path
 from accounting_etl.database import Database
 from accounting_etl.excel_builder import ExcelBuilder
 from accounting_etl.update_checker import UpdateChecker
@@ -21,8 +21,8 @@ def main():
     print("Accounting ETL - Credit Card Statement Processor")
     print("=" * 60)
 
-    # Get script directory for relative paths
-    script_dir = Path(__file__).parent.parent.parent
+    # Get base directory (works for both exe and source)
+    base_dir = get_base_path()
 
     # Check for updates
     update_checker = UpdateChecker()
@@ -62,7 +62,7 @@ def main():
 
     # Find PDFs in downloads folder
     print("\n[2/4] Scanning for credit card statement PDFs...")
-    downloads_dir = script_dir / "downloads"
+    downloads_dir = base_dir / "downloads"
     downloads_dir.mkdir(exist_ok=True)
 
     # Find all PDFs recursively in downloads folder

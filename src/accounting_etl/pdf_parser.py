@@ -1,9 +1,25 @@
 """PDF parsing for credit card statements and GL code lookups."""
 
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 import pdfplumber
+
+
+def get_base_path() -> Path:
+    """
+    Get the base directory for the application.
+
+    Returns the directory containing the executable when frozen (PyInstaller),
+    otherwise returns the project root when running from source.
+    """
+    if getattr(sys, 'frozen', False):
+        # Running as compiled executable
+        return Path(sys.executable).parent
+    else:
+        # Running from source
+        return Path(__file__).parent.parent.parent
 
 
 @dataclass
@@ -150,9 +166,9 @@ class ChartOfAccountsParser:
     """Parses the Chart of Accounts PDF for funder, GL, and location codes."""
 
     def __init__(self):
-        # Hardcoded path relative to script location
-        script_dir = Path(__file__).parent.parent.parent
-        self.pdf_path = script_dir / "config" / "chart of accounts.pdf"
+        # Get base directory (works for both exe and source)
+        base_dir = get_base_path()
+        self.pdf_path = base_dir / "config" / "chart of accounts.pdf"
 
     def parse(self) -> tuple:
         """

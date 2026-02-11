@@ -36,7 +36,8 @@ jobs:
 
       - name: Build executable with PyInstaller
         run: |
-          uv run pyinstaller build/AccountingETL.spec
+          uv run pyinstaller build\AccountingETL.spec
+        shell: pwsh
 
       - name: Create downloads and data directories
         run: |

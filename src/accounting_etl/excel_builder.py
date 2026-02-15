@@ -48,7 +48,7 @@ class ExcelBuilder:
                 'Funder': txn.funder,
                 'Dept': txn.department,
                 'Amount': txn.amount,
-                'Receipt_Received': 'No'  # Default to No
+                'Receipt_Received': False  # Boolean for Excel checkbox
             })
 
         df = pd.DataFrame(data)
@@ -98,10 +98,6 @@ class ExcelBuilder:
             if dept_codes and len(dept_codes) > 0:
                 print(f"  Adding Department dropdown to column H ({len(dept_codes)} codes)")
                 self._add_dropdown(worksheet, workbook, lists_sheet, dept_codes, len(df), 'H', 'Dept', col_offset)
-
-            # Add Yes/No dropdown for Receipt_Received column (column J)
-            print(f"  Adding Receipt_Received dropdown to column J")
-            self._add_receipt_dropdown(worksheet, len(df))
 
         return output_path
 
@@ -183,16 +179,3 @@ class ExcelBuilder:
 
         # Freeze header row
         worksheet.freeze_panes = 'A2'
-
-    def _add_receipt_dropdown(self, worksheet, num_rows: int):
-        """Add Yes/No dropdown validation to Receipt_Received column."""
-        receipt_dv = DataValidation(type="list", formula1='"Yes,No"', allow_blank=False)
-        receipt_dv.prompt = 'Select Yes or No'
-        receipt_dv.promptTitle = 'Receipt Received'
-        receipt_dv.error = 'Please select Yes or No'
-        receipt_dv.errorTitle = 'Invalid Entry'
-
-        worksheet.add_data_validation(receipt_dv)
-
-        for row in range(2, num_rows + 2):
-            receipt_dv.add(f'J{row}')

@@ -1,5 +1,6 @@
 """PDF parsing for credit card statements and GL code lookups."""
 
+import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -47,7 +48,13 @@ class GLCodeSet:
 
 
 class StatementParser:
-    """Parses Wells Fargo credit card statement PDFs to extract transactions."""
+    """Parses Wells Fargo credit card statement PDFs to extract transactions.
+
+    Uses pdfplumber's positional word extraction to distinguish between
+    the Credits and Charges columns based on x-coordinates. This allows
+    proper identification of refunds (credits) vs regular charges, and
+    filtering out payment rows.
+    """
 
     def __init__(self, pdf_path: Path):
         self.pdf_path = pdf_path
@@ -56,9 +63,9 @@ class StatementParser:
         """
         Parse the Wells Fargo PDF and extract all transactions.
 
-        Expected format (text, not table):
-        Trans Post Reference Number Description Credits Charges
-        01/02 01/03 5543286QJ5WN288J6 AMAZON MKTPL*KA0S393X3 SEATTLE WA 39.12
+        Uses positional word extraction to determine whether amounts fall
+        under the Credits or Charges column. Credits (refunds) are stored
+        as negative amounts. Payment rows (PAYMENT THANK YOU) are skipped.
 
         Returns list of Transaction objects.
         """
@@ -66,96 +73,156 @@ class StatementParser:
 
         with pdfplumber.open(self.pdf_path) as pdf:
             for page in pdf.pages:
-                # Extract text from the page
                 text = page.extract_text()
                 if not text or "Transaction Details" not in text:
                     continue
 
-                # Split into lines and find transaction section
-                lines = text.split('\n')
-
-                # Find the start of transaction data
-                in_transactions = False
-                for line in lines:
-                    # Start parsing after the header row
-                    if "Transaction Details" in line:
-                        in_transactions = True
-                        continue
-
-                    # Skip the column header row
-                    if in_transactions and "Trans Post Reference Description" in line:
-                        continue
-
-                    # Parse transaction lines
-                    if in_transactions:
-                        txn = self._parse_transaction_line(line)
-                        if txn:
-                            transactions.append(txn)
+                page_txns = self._parse_page_with_positions(page)
+                transactions.extend(page_txns)
 
         return transactions
 
-    def _parse_transaction_line(self, line: str) -> Optional[Transaction]:
+    def _parse_page_with_positions(self, page) -> List[Transaction]:
+        """Parse a single page using positional word data."""
+        words = page.extract_words()
+        if not words:
+            return []
+
+        # Find column positions dynamically from headers
+        credits_x1, charges_x1 = self._find_column_positions(words)
+        if credits_x1 is None or charges_x1 is None:
+            return []
+
+        # Midpoint between Credits and Charges right edges
+        column_threshold = (credits_x1 + charges_x1) / 2
+
+        # Find where transaction data begins
+        header_top = self._find_header_top(words)
+        if header_top is None:
+            return []
+
+        # Group words into rows and parse each one
+        rows = self._group_words_into_rows(words, header_top)
+
+        transactions = []
+        for row_words in rows:
+            txn = self._parse_row(row_words, column_threshold)
+            if txn:
+                transactions.append(txn)
+
+        return transactions
+
+    def _find_column_positions(self, words: list) -> tuple:
+        """Find right-edge x-positions of Credits and Charges headers.
+
+        Only matches a Credits/Charges pair that appear on the same
+        horizontal line (within 2 points vertically), which ensures we
+        pick up the Transaction Details column headers and not the
+        Account Summary section's unrelated "Credits" / "Charges" labels.
         """
-        Parse a Wells Fargo transaction line into a Transaction.
+        credits_words = [w for w in words if w['text'] == 'Credits']
+        charges_words = [w for w in words if w['text'] == 'Charges']
 
-        Expected format:
-        01/02 01/03 5543286QJ5WN288J6 AMAZON MKTPL*KA0S393X3 SEATTLE WA 39.12
+        for cred in credits_words:
+            for chg in charges_words:
+                if abs(cred['top'] - chg['top']) < 2 and chg['x1'] > cred['x1']:
+                    return cred['x1'], chg['x1']
 
-        Format breakdown:
-        - Trans date (MM/DD)
-        - Post date (MM/DD)
-        - Reference number
-        - Description (multiple words)
-        - Amount (last number on line, could be in Credits or Charges column)
-        """
-        import re
+        return None, None
 
-        if not line or not line.strip():
+    def _find_header_top(self, words: list) -> Optional[float]:
+        """Find vertical position of the 'Trans Post Reference...' header row."""
+        for w in words:
+            if w['text'] == 'Trans':
+                top = w['top']
+                nearby = [nw['text'] for nw in words if abs(nw['top'] - top) < 2]
+                if 'Post' in nearby and 'Reference' in nearby:
+                    return top
+        return None
+
+    def _group_words_into_rows(self, words: list, header_top: float) -> list:
+        """Group words below the header into rows by vertical position."""
+        data_words = [w for w in words if w['top'] > header_top + 5]
+        if not data_words:
+            return []
+
+        data_words.sort(key=lambda w: (w['top'], w['x0']))
+
+        rows = []
+        current_row = [data_words[0]]
+        current_top = data_words[0]['top']
+
+        for w in data_words[1:]:
+            if abs(w['top'] - current_top) < 3:
+                current_row.append(w)
+            else:
+                rows.append(current_row)
+                current_row = [w]
+                current_top = w['top']
+
+        if current_row:
+            rows.append(current_row)
+
+        return rows
+
+    def _parse_row(self, row_words: list, column_threshold: float) -> Optional[Transaction]:
+        """Parse a row of positioned words into a Transaction."""
+        if not row_words or len(row_words) < 4:
             return None
 
-        # Skip empty or header-like lines
-        line = line.strip()
-        if len(line) < 10:
+        # First two words must be dates (MM/DD)
+        if not re.match(r'^\d{2}/\d{2}$', row_words[0]['text']):
+            return None
+        if not re.match(r'^\d{2}/\d{2}$', row_words[1]['text']):
             return None
 
-        # Match pattern: date date reference_num description amount
-        # Pattern: MM/DD MM/DD ALPHANUMERIC [words] NUMBER
-        pattern = r'^(\d{2}/\d{2})\s+(\d{2}/\d{2})\s+(\S+)\s+(.+?)\s+([\d,]+\.?\d*)$'
-        match = re.match(pattern, line)
+        post_date = row_words[1]['text']
 
-        if not match:
+        # Find the amount: rightmost word matching a dollar amount pattern
+        amount_word = None
+        amount_idx = None
+        for i in range(len(row_words) - 1, 1, -1):
+            if re.match(r'^[\d,]+\.\d{2}$', row_words[i]['text']):
+                amount_word = row_words[i]
+                amount_idx = i
+                break
+
+        if amount_word is None or amount_idx is None:
             return None
 
-        trans_date = match.group(1)
-        post_date = match.group(2)
-        reference_num = match.group(3)
-        description = match.group(4).strip()
-        amount_str = match.group(5)
+        # Credit vs Charge based on x-position
+        is_credit = amount_word['x1'] < column_threshold
+
+        amount = self._parse_amount(amount_word['text'])
+        if amount is None:
+            return None
+
+        # Description = words between reference number and amount
+        if amount_idx < 4:
+            return None
+
+        description = ' '.join(w['text'] for w in row_words[3:amount_idx])
 
         # Skip payment rows
         if "PAYMENT THANK YOU" in description.upper():
             return None
 
-        # Skip if no description
         if not description or len(description) < 3:
             return None
 
-        # Parse amount
-        amount = self._parse_amount(amount_str)
-        if amount is None:
-            return None
+        # Credits (refunds) stored as negative
+        if is_credit:
+            amount = -amount
 
         return Transaction(
-            date=post_date,  # Use post date
+            date=post_date,
             vendor=description,
             amount=amount
         )
 
     def _parse_amount(self, amount_str: str) -> Optional[float]:
         """Parse amount string to float."""
-        # Remove dollar signs, commas, and whitespace
         cleaned = amount_str.replace('$', '').replace(',', '').strip()
-
         try:
             return float(cleaned)
         except ValueError:
@@ -177,8 +244,6 @@ class ChartOfAccountsParser:
         Returns tuple of (funder_codes, gl_codes, location_codes, program_codes, dept_codes)
         Each is a dict of {code: name}
         """
-        import re
-
         funder_codes = {}
         gl_codes = {}
         location_codes = {}

@@ -29,29 +29,24 @@
 3. Copy your **chart of accounts.pdf** file into this folder
 4. Make sure it's named exactly: **chart of accounts.pdf** (lowercase, with spaces)
 
-### Step 5: Add Credit Card Statements
+### Step 5: Download Credit Card Statements
 
 1. Download your Wells Fargo credit card statements as PDFs from your bank
-2. In the **AccountingETL** folder, open the **downloads** folder
-3. Copy all your statement PDFs into this folder
+2. Save them anywhere you can find them (Desktop, Downloads, etc.)
 
 ### Step 6: Run the Application
 
-1. Go back to the main **AccountingETL** folder
+1. Go to the main **AccountingETL** folder
 2. Double-click on **AccountingETL.exe**
-3. A black window will appear showing progress
-4. Wait for it to process (usually takes 5-30 seconds)
-5. When you see "✓ Success! Excel saved to:", it's done
-6. Press **Enter** to close the window
+3. A window titled **"Accounting ETL"** will open
+4. Click **Browse Files...** and select your Wells Fargo statement PDFs
+   - You can select multiple files at once (hold **Ctrl** and click)
+   - Or click Browse again to add more files later
+5. Click **Generate Spreadsheet**
+6. The status panel will show progress as each PDF is processed
+7. When it finishes, the Excel file opens automatically
 
-### Step 7: Open Your Excel File
-
-1. Go to the **downloads** folder
-2. Look for a file named like: **credit_card_transactions_20240210_143015.xlsx**
-   - The numbers are the date and time it was created
-3. Double-click to open it in Excel
-
-### Step 8: Fill Out the Spreadsheet
+### Step 7: Fill Out the Spreadsheet
 
 The Excel file has these columns:
 
@@ -64,13 +59,12 @@ The Excel file has these columns:
 7. **Funder** - **SELECT FROM DROPDOWN**
 8. **Dept** - **SELECT FROM DROPDOWN**
 9. **Amount** - Already filled (from the statement)
-10. **Receipt_Received** - Type "Yes" or "No" for each transaction
+10. **Receipt_Received** - Click the checkbox when you have the receipt
 
-### Step 9: Save and Clean Up
+### Step 8: Save and Clean Up
 
 1. **Save your Excel file** (Ctrl+S or File > Save)
-2. You can delete or move the PDF files from the **downloads** folder once you're done
-3. The Excel file is your final output - save it wherever you need it
+2. The Excel file is your final output - save it wherever you need it
 
 ---
 
@@ -88,11 +82,12 @@ Make sure:
 - The file is in the **config** folder
 - The file is named exactly: **chart of accounts.pdf** (all lowercase, with spaces)
 
-### No PDF files found
+### No transactions extracted from PDFs
 
 Make sure:
-- Your statement PDFs are in the **downloads** folder
+- Your statement PDFs are downloaded directly from Wells Fargo (not scanned copies)
 - The files are actually PDFs (end with .pdf)
+- They are Wells Fargo credit card statements (not bank statements)
 
 ### Dropdowns are empty in Excel
 
@@ -100,12 +95,16 @@ This means the Chart of Accounts wasn't read correctly:
 - Check that your PDF has sections labeled: "Funder Code", "EXP CODE", "LOC CODE", "PROG CODE", "DEPT CODE"
 - Make sure the PDF is readable (not a scanned image)
 
+### Excel file doesn't open automatically
+
+The file is saved in the **downloads** folder inside the **AccountingETL** folder. Look for a file named like: **credit_card_transactions_20250210_143015.xlsx** (the numbers are the date and time it was created).
+
 ---
 
 ## Tips
 
 - **Run it regularly**: Process statements monthly or weekly
-- **Keep old Excel files**: Save them with descriptive names like "January_2024_Statements.xlsx"
+- **Keep old Excel files**: Save them with descriptive names like "January_2025_Statements.xlsx"
 - **Check your work**: Always review the Excel file before submitting it
 - **Contact support**: If something isn't working, create an issue at: https://github.com/mamelara/accounting-etl/issues
 
@@ -117,14 +116,12 @@ After setup, your folder should look like this:
 
 ```
 AccountingETL/
-├── AccountingETL.exe          ← Double-click this to run
+├── AccountingETL.exe          <- Double-click this to run
 ├── config/
-│   └── chart of accounts.pdf  ← Your GL codes (you provide this)
+│   └── chart of accounts.pdf  <- Your GL codes (you provide this)
 ├── downloads/
-│   ├── statement1.pdf         ← Wells Fargo statements (you provide these)
-│   ├── statement2.pdf
-│   └── transactions_*.xlsx    ← Generated Excel files (output)
-├── data/                      ← Database (created automatically)
+│   └── transactions_*.xlsx    <- Generated Excel files (output)
+├── data/                      <- Database (created automatically)
 └── README.txt
 ```
 

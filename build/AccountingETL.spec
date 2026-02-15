@@ -10,7 +10,7 @@ project_root = Path(SPECPATH).parent
 src_path = project_root / "src"
 
 a = Analysis(
-    [str(src_path / "accounting_etl" / "main.py")],
+    [str(src_path / "accounting_etl" / "gui.py")],
     pathex=[str(src_path)],
     binaries=[],
     datas=[
@@ -50,7 +50,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
